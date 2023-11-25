@@ -27,7 +27,7 @@ def create_corcondance_matrix(data, weights):
             if i == j:
                 continue
             else:
-                comparison_result = data[i] - data[j]
+                comparison_result = np.array(data[i]) - np.array(data[j])
                 result = np.where(comparison_result < 0, 0, weights)
                 sum_result = np.sum(result)
                 comparison_matrix[i, j] = sum_result
@@ -77,7 +77,10 @@ def create_discordance_matrix(data, weight, max_matrix):
             # logging.info(f'Pengurangan {data[i][j]} - {weight[j]}')
             # logging.info(f'Hasil Absolute: {positive}')
             # logging.info(f'Max: {np.max(positive)} / {max_matrix[i][j]}')
-            final_result = np.max(positive)/max_matrix[i][j]
+            if(max_matrix[i][j]!=0):
+                final_result = np.max(positive)/max_matrix[i][j]
+            else:
+                final_result = 0
             # logging.info(f'Hasil: {final_result}')
             # logging.info("++++++++++++++++++++++++++++++++++")
             discordance_matrix[i, j] = final_result
@@ -92,7 +95,30 @@ def matrix_to_csv(matrix, filename):
         csvwriter = csv.writer(csvfile)
         csvwriter.writerows(matrix)
 
-        
+
+def create_matrix_dominance_concordance(concordance):
+    treshold = np.sum(concordance)/(concordance.shape[0]*(concordance.shape[0]-1))
+    num_rows = len(concordance)
+    matrix = np.zeros((num_rows, num_rows))
+    for i in range(num_rows):
+        for j in range(num_rows):
+            value = concordance[i][j] - treshold
+            result = np.where(value >=0, 1, 0)
+            matrix[i,j] = result
+    return matrix
+
+
+def create_matrix_dominance_discordance(discordance):
+    treshold = np.sum(discordance)/(discordance.shape[0]*(discordance.shape[0]-1))
+    num_rows = len(discordance)
+    matrix = np.zeros((num_rows, num_rows))
+    for i in range(num_rows):
+        for j in range(num_rows):
+            value = discordance[i][j] - treshold
+            result = np.where(value >=0, 1, 0)
+            matrix[i,j] = result
+    return matrix
+
 
 def start():
     data = [
@@ -138,17 +164,21 @@ def start():
     # print(normalized_array)
 
     weighted_array = normalized_array * weights
-    
-    # print("Weighted Array:")
-    # print(weighted_array)
-    # print(weighted_array)
+    concordance = create_corcondance_matrix(data, weights)
+    dominance_concordance = create_matrix_dominance_concordance(concordance)
+
+
     max_matrix = create_max_matrix(weighted_array)
     # iterate_and_print(max_matrix)
     # Perbandingan antar baris
     comparison_matrix = create_discordance(weighted_array)
     discordance_matrix = create_discordance_matrix(comparison_matrix, weighted_array, max_matrix)
-    csv_filename = 'discordance.csv'
-    matrix_to_csv(discordance_matrix, csv_filename)
+    dominance_discordance = create_matrix_dominance_discordance(discordance_matrix)
+    aggregate = dominance_concordance * dominance_discordance
+    row_sums = np.sum(aggregate, axis=1)
+    print(row_sums)
+    # csv_filename = 'discordance.csv'
+    # matrix_to_csv(discordance_matrix, csv_filename)
 
 if __name__ == "__main__":
     start()
