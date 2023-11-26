@@ -23,6 +23,12 @@
 
                 <label for="weights">Bobot (Pastikan jumlah bobot sama dengan jumlah kriteria & pisahkan dengan comma ',')</label>
                 <input type="text" id="weights" name="weights" class="form-select mt-3 mb-3" required>
+                {% if error %}
+                    <div class="alert alert-danger alert-dismissible" role="alert">
+                        {{ error }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endif %}
                 <button type="submit" class="btn btn-primary mt-3">Process</button>
                 <div id="alertPlaceholder"></div>
             </form>

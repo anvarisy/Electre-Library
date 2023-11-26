@@ -55,7 +55,7 @@ async def view_home(request: Request):
     files = None
     if os.path.exists(UPLOAD_DIR):
         files = os.listdir(UPLOAD_DIR)
-    return templates.TemplateResponse("calculate.html", {"request": request, "files":files})
+    return templates.TemplateResponse("calculate.html", {"request": request, "files":files, "error":""})
 
 @router.post("/post-calculate", response_class=HTMLResponse)
 async def train_result(
@@ -65,14 +65,29 @@ async def train_result(
 ):
     filename = f'./upload/{selectedFile}'
     df = pd.read_csv(filename)
-    selected_columns = ['K1', 'K2', 'K3', 'K4', 'K5']
-    df_filtered = df[selected_columns]
+    # selected_columns = ['K1', 'K2', 'K3', 'K4', 'K5']
+    kolom_tidak_berguna = 'Nama Salesman'
+
+    # Menghapus kolom yang tidak berguna
+    df_filtered = df.drop(columns=[kolom_tidak_berguna])
+    # df_filtered = df[selected_columns]
 
     # Mengonversi DataFrame menjadi matriks
     data_matrix = df_filtered.values.tolist()
+
     array_output = [int(item.strip()) for item in weights.split(',')]
+    weight_size = len(array_output)
+    colomn_size = len(data_matrix[0])
+    if(weight_size != colomn_size):
+        files = None
+        if os.path.exists(UPLOAD_DIR):
+            files = os.listdir(UPLOAD_DIR)
+        return templates.TemplateResponse("calculate.html", {"request": request, "files":files, "error":"Jumlah kriteria & bobot tidak sama !"})
     e = Electre()
-    res = e.start(data_matrix, array_output)
+    try:
+        res = e.start(data_matrix, array_output)
+    except Exception as e:
+        return templates.TemplateResponse("error.html", {"request": request})
     df['Hasil Proses'] = res
 
     # Mengurutkan DataFrame berdasarkan kolom baru
@@ -98,6 +113,6 @@ async def download_csv(
         csv_bytes = file.read()
 
     # Menanggapi unduhan dengan menggunakan StreamingResponse
-    return StreamingResponse(io.BytesIO(csv_bytes), media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="{name}"'})
+    return StreamingResponse(io.BytesIO(csv_bytes), media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="{output_filename}"'})
 
 
